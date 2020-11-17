@@ -1,17 +1,15 @@
 'use strict';
 
 const Promise = require('bluebird');
-const _ = require('lodash');
 const Path = require('path');
 const Handlebars = require('handlebars');
 const inquirer = require('inquirer');
-const execa = require("execa");
-const shell = require('../../core/shell');
-const fs = Promise.promisifyAll(require('fs-extra'));
-const helpers = require('../../core/utils');
+const execa = require('execa');
+const shell = require('@frctl/core').shell;
+const fs = require('fs-extra');
+const helpers = require('@frctl/core').utils;
 
 module.exports = {
-
     command: 'new <path>',
 
     config: {
@@ -26,7 +24,7 @@ module.exports = {
         const basePath = baseDir.startsWith('/') ? baseDir : Path.join(process.cwd(), baseDir);
         const viewsPath = Path.join(__dirname, '../../../views/cli/new');
         const fractalFileTpl = Path.join(viewsPath, 'fractal.hbs');
-        const docsIndexTpl = Path.join(viewsPath, 'docs/index.hbs');
+        const docsIndexTpl = Path.join(viewsPath, 'docs/index.md');
         const exampleComponent = Path.join(viewsPath, 'components/example');
 
         if (helpers.fileExistsSync(basePath)) {
@@ -41,7 +39,7 @@ module.exports = {
             {
                 type: 'input',
                 name: 'projectTitle',
-                message: 'What\'s the title of your project?',
+                message: "What's the title of your project?",
                 default: helpers.titlize(args.path),
             },
             {
@@ -88,44 +86,54 @@ module.exports = {
                 dependencies: {
                     '@frctl/fractal': `^${fractal.get('version')}`,
                 },
+                scripts: {
+                    'fractal:start': 'fractal start --sync',
+                    'fractal:build': 'fractal build',
+                },
             };
 
             const fractalContents = Handlebars.compile(fs.readFileSync(fractalFileTpl, 'utf8'))(answers);
             const indexContents = Handlebars.compile(fs.readFileSync(docsIndexTpl, 'utf8'))(answers);
 
-            return fs.ensureDirAsync(basePath).then(() => {
-                return Promise.all([
-                    fs.ensureDirAsync(componentsDir),
-                    fs.ensureDirAsync(docsDir),
-                    fs.ensureDirAsync(publicDir),
-                    fs.writeJsonAsync(packageJSONPath, packageJSON),
-                ]);
-            }).then(paths => {
-                return fs.copyAsync(exampleComponent, componentCopyTo);
-            }).then(paths => {
-                if (answers.useGit) {
-                    shell.touch(Path.join(publicDir, '.gitkeep'));
-                    return fs.writeFileAsync(gitIgnorePath, 'node_modules\n');
-                }
-                return paths;
-            }).then(paths => {
-                return Promise.all([
-                    fs.writeFileAsync(fractalFilePath, fractalContents),
-                    fs.writeFileAsync(docsIndexPath, indexContents),
-                ]);
-            }).finally(async () => {
-                console.log('Installing NPM dependencies - this may take some time!');
-                shell.cd(basePath);
-                const { stdout } = await execa('npm', ['install']);
-                console.log(stdout);
-                console.success('Your new Fractal project has been set up.');
-                done();
-            }).catch(e => {
-                fs.remove(basePath);
-                console.error(e);
-                done();
-            });
+            return fs
+                .ensureDir(basePath)
+                .then(() => {
+                    return Promise.all([
+                        fs.ensureDir(componentsDir),
+                        fs.ensureDir(docsDir),
+                        fs.ensureDir(publicDir),
+                        fs.writeJson(packageJSONPath, packageJSON),
+                    ]);
+                })
+                .then(() => {
+                    return fs.copy(exampleComponent, componentCopyTo);
+                })
+                .then((paths) => {
+                    if (answers.useGit) {
+                        shell.touch(Path.join(publicDir, '.gitkeep'));
+                        return fs.writeFile(gitIgnorePath, 'node_modules\n');
+                    }
+                    return paths;
+                })
+                .then(() => {
+                    return Promise.all([
+                        fs.writeFile(fractalFilePath, fractalContents),
+                        fs.writeFile(docsIndexPath, indexContents),
+                    ]);
+                })
+                .finally(async () => {
+                    console.log('Installing NPM dependencies - this may take some time!');
+                    shell.cd(basePath);
+                    const { stdout } = await execa('npm', ['install']);
+                    console.log(stdout);
+                    console.success('Your new Fractal project has been set up.');
+                    done();
+                })
+                .catch((e) => {
+                    fs.remove(basePath);
+                    console.error(e);
+                    done();
+                });
         });
     },
-
 };

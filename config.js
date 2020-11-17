@@ -10,7 +10,7 @@ module.exports = {
         version: null,
     },
     components: {
-        engine: '@frctl/handlebars',
+        engine: require('@frctl/handlebars'),
         path: null,
         label: 'components',
         title: 'Components',
@@ -21,16 +21,18 @@ module.exports = {
             preview: 'preview',
             config: 'config',
             collator: 'collator',
-            notes: 'readme'
+            notes: 'readme',
         },
         resources: {
             assets: {
                 label: 'Assets',
-                match: ['**/*']
-            }
+                match: ['**/*'],
+            },
         },
         default: {
-            collator: function collator(markup, item) { return `<!-- Start: @${item.handle} -->\n${markup}\n<!-- End: @${item.handle} -->\n` },
+            collator: function collator(markup, item) {
+                return `<!-- Start: @${item.handle} -->\n${markup}\n<!-- End: @${item.handle} -->\n`;
+            },
             preview: null,
             display: {},
             context: {},
@@ -44,22 +46,22 @@ module.exports = {
             prototype: {
                 label: 'Prototype',
                 description: 'Do not implement.',
-                color: '#FF3333'
+                color: '#FF3333',
             },
             wip: {
                 label: 'WIP',
                 description: 'Work in progress. Implement with caution.',
-                color: '#FF9233'
+                color: '#FF9233',
             },
             ready: {
                 label: 'Ready',
                 description: 'Ready to implement.',
-                color: '#29CC29'
-            }
-        }
+                color: '#29CC29',
+            },
+        },
     },
     docs: {
-        engine: '@frctl/handlebars',
+        engine: require('@frctl/handlebars'),
         path: null,
         label: 'documentation',
         title: 'Documentation',
@@ -70,7 +72,7 @@ module.exports = {
             pedantic: false,
             sanitize: false,
             smartLists: true,
-            smartypants: true
+            smartypants: true,
         },
         ext: '.md',
         indexLabel: 'Overview',
@@ -83,13 +85,13 @@ module.exports = {
             draft: {
                 label: 'Draft',
                 description: 'Work in progress.',
-                color: '#FF3333'
+                color: '#FF3333',
             },
             ready: {
                 label: 'Ready',
                 description: 'Ready for referencing.',
-                color: '#29CC29'
-            }
+                color: '#29CC29',
+            },
         },
         files: {
             config: 'config',
@@ -101,30 +103,31 @@ module.exports = {
     },
     cli: {},
     web: {
-        theme: '@frctl/mandelbrot',
+        theme: require('@frctl/mandelbrot')(),
         server: {
             sync: false,
             watch: false,
             port: null,
-            syncOptions: {}
+            syncOptions: {},
         },
         builder: {
             dest: null,
             concurrency: 10,
             ext: '.html',
             urls: {
-                ext: '.html'
+                ext: '.html',
             },
             static: {
-                ignored: []
-            }
+                ignored: [],
+            },
         },
         static: {
             path: null,
             mount: '/',
         },
         assets: {
-            mount: 'assets'
-        }
-    }
+            mount: 'assets',
+        },
+        highlighter: require('@frctl/core').highlighter,
+    },
 };

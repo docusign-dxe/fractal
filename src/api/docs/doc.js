@@ -4,11 +4,10 @@ const Path = require('path');
 const Promise = require('bluebird');
 const matter = require('gray-matter');
 const _ = require('lodash');
-const utils = require('../../core/utils');
-const Entity = require('../../core/entities/entity');
+const utils = require('@frctl/core').utils;
+const Entity = require('@frctl/core').entities.Entity;
 
 module.exports = class Doc extends Entity {
-
     constructor(config, content, parent) {
         super(config.name, config, parent);
         this.isDoc = true;
@@ -33,7 +32,9 @@ module.exports = class Doc extends Entity {
             return utils.slugify(config.handle).toLowerCase();
         }
         const ref = this.isIndex ? (this.parent.isSource ? 'index' : this.parent.name) : config.name;
-        return utils.slugify(this.parent.getProp('prefix') ? `${this.parent.getProp('prefix')}-${ref}` : ref).toLowerCase();
+        return utils
+            .slugify(this.parent.getProp('prefix') ? `${this.parent.getProp('prefix')}-${ref}` : ref)
+            .toLowerCase();
     }
 
     _title(config) {
@@ -90,5 +91,4 @@ module.exports = class Doc extends Entity {
         self.context = this.context;
         return self;
     }
-
 };
