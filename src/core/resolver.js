@@ -40,13 +40,17 @@ const resolver = module.exports = {
                 return item.replace(/^\\@/, '@');
             }
 
-	        if (_.isString(item) && _.startsWith(item, '@@')) {
+            if (_.isString(item) && _.startsWith(item, '@@')) {
                 const entity = source.find(item.substring(1));
-                const fullRenderedComponent = source.engine().render(entity.viewPath, entity.content, entity.context, {
-                    self: entity.toJSON(),
-                    env: {},
+                return resolve(entity.context).then((entityContext) => {
+                    const fullRenderedComponent = source
+                        .engine()
+                        .render(entity.viewPath, entity.content, entityContext, {
+                            self: entity.toJSON(),
+                            env: {},
+                        });
+                    return fullRenderedComponent;
                 });
-                return fullRenderedComponent;
             }
 
             if (_.isString(item) && _.startsWith(item, '@')) {
