@@ -1,161 +1,203 @@
-<!-- markdownlint-disable MD033 MD041 -->
-<p align=center>
-  <a href="https://fractal.build/" align=center>
-    <img
-        src="https://d33wubrfki0l68.cloudfront.net/5d2e88eb1e2b69f3f8b3a3372b6e4b3b4f095130/2159b/hero.png"
-        alt=""
-        width="110px">
-  </a>
-  <h1 align="center">Fractal</h1>
-</p>
+# @frctl/twig
 
-<br />
-<div align="center">
-  <!-- Github Actions -->
-  <a href="https://github.com/frctl/fractal/actions" title="Build status">
-    <img src="https://img.shields.io/github/workflow/status/frctl/fractal/test/main" alt="">
-  </a>
-  <!-- NPM Version -->
-  <a href="https://www.npmjs.com/package/@frctl/fractal" title="Current version">
-    <img src="https://img.shields.io/npm/v/@frctl/fractal.svg" alt="">
-  </a>
-  <!-- Discord -->
-  <a href="https://discord.gg/vuRz4Yx" title="Chat with us on Discord">
-    <img src="https://img.shields.io/badge/discord-join-7289DA" alt="">
-  </a>
-  <!-- NPM Downloads -->
-  <a href="https://www.npmjs.com/package/@frctl/fractal" title="NPM monthly downloads">
-    <img src="https://img.shields.io/npm/dm/@frctl/fractal" alt="">
-  </a>
-  <!-- License -->
-  <a href="https://github.com/frctl/fractal/blob/main/LICENSE" title="MIT license">
-    <img alt="GitHub" src="https://img.shields.io/github/license/frctl/fractal">
-  </a>
-</div>
+[Twig](https://github.com/twigjs/twig.js) template enginge adapter for [Fractal](http://github.com/frctl/fractal).
 
-<br />
+[![NPM Version](https://img.shields.io/npm/v/@frctl/twig)](https://www.npmjs.com/package/@frctl/twig)
 
-Fractal is a tool to help you **build** and **document** web component libraries and design systems.
+Requires Fractal v1.1.0 or greater.
 
-[Read the full Fractal documentation][docs]
+To install this adapter run this command:
 
-## Introduction
+`npm install @frctl/twig`
 
-Component (or pattern) libraries are a way of designing and building websites in a modular fashion, breaking up the UI into small, reusable chunks that can then later be assembled in a variety of ways to build anything from larger components right up to whole pages.
+then open your fractal.js file and add following lines:
 
-Fractal helps you assemble, preview and document website component libraries, or even scale up to document entire design systems for your organisation.
-
-Check out the [documentation][docs] for more information.
-
-## Requirements
-
-You'll need a [supported LTS version](https://github.com/nodejs/Release) of Node. Fractal may work on unsupported versions, but there is no active support from Fractal and new features may not be backwards compatible with EOL versions of Node.
-
-## Getting started
-
-### Install into your project (recommended)
-
-```shell
-npm install @frctl/fractal --save-dev
+```js
+/*
+ * Require the Twig adapter
+ */
+const twigAdapter = require('@frctl/twig')();
+fractal.components.engine(twigAdapter);
+fractal.components.set('ext', '.twig');
 ```
 
-Then create your `fractal.config.js` file in the project root, and configure using the [official documentation][docs].
+## Using Twig for docs
 
-Then you can either run `node_modules/.bin/fractal start` to start up the project, or create an alias under the `scripts` section in your package.json as a shortcut.
-
-e.g.
-
-```json
-"scripts": {
-    "fractal:start": "fractal start --sync",
-    "fractal:build": "fractal build"
-}
+To use Twig for docs, set the docs engine to `@frctl/twig`:
+```js
+fractal.docs.engine(twigAdapter);
 ```
 
-then
+However, due to the way this adapter currently extends Twig, it is necessary to *set the docs engine before setting the components engine*.
 
-```shell
-npm run fractal:start
+```js
+/*
+ * Require the Twig adapter
+ */
+const twigAdapter = require('@frctl/twig')();
+
+// first set docs engine
+fractal.docs.engine(twigAdapter);
+
+// then set components engine
+fractal.components.engine(twigAdapter);
 ```
 
-### Installing globally
 
-```shell
-npm i -g @frctl/fractal
+## Extending with a custom config
+```js
+/*
+ * Require the Twig adapter
+ */
+const twigAdapter = require('@frctl/twig')({
+    // if pristine is set to true, bundled filters, functions, tests
+    // and tags are not registered.
+    // default is false
+    pristine: false,
+
+    // if importContext is set to true, all include calls are passed
+    // the component's context
+    // default is false
+    importContext: false,
+
+    // use custom handle prefix
+    // this will change your includes to {% include '%button' %}
+    // default is '@'
+    handlePrefix: '%',
+
+    // set a base path for twigjs
+    // Setting base to '/' will make sure all resolved render paths
+    // start at the defined components dir, instead of being relative.
+    // default is null
+    base: '/',
+
+    // should missing variable/keys emit an error message
+    // If false, they default to null.
+    // default is false
+    strict_variables: true,
+
+    // define Twig namespaces, see https://github.com/twigjs/twig.js/wiki#namespaces
+    // this may break some fractal functionality, like including components via their handles and the render tag
+    namespaces: {
+        'Components': './components'
+    },
+
+    // use twig.js default template loader
+    // this will allow including templates via relative paths, like twig.js or PHP Twig does by default
+    // changing this will break including components via their fractal handles
+    // changing this will break the custom render tag
+    // default is 'fractal'
+    method: 'fs',
+
+    // register custom filters
+    filters: {
+        // usage: {{ label|capitalize }}
+        capitalize: function(str) {
+            if (!str) return '';
+
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+    },
+
+    // register custom functions
+    functions: {
+        // usage: {{ capitalize(label) }}
+        capitalize: function(str) {
+            if (!str) return '';
+
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+    },
+
+    // register custom tests
+    tests: {
+        // usage: {% if label is equalToNull %}
+        equalToNull: function(param) {
+            return param === null;
+        }
+    },
+
+    // register custom tags
+    tags: {
+        flag: function(Twig) {
+            // usage: {% flag "ajax" %}
+            // all credit to https://github.com/twigjs/twig.js/wiki/Extending-twig.js-With-Custom-Tags
+            return {
+                // unique name for tag type
+                type: "flag",
+                // regex match for tag (flag white-space anything)
+                regex: /^flag\s+(.+)$/,
+                // this is a standalone tag and doesn't require a following tag
+                next: [ ],
+                open: true,
+
+                // runs on matched tokens when the template is loaded. (once per template)
+                compile: function (token) {
+                    var expression = token.match[1];
+
+                    // Compile the expression. (turns the string into tokens)
+                    token.stack = Twig.expression.compile.apply(this, [{
+                        type:  Twig.expression.type.expression,
+                        value: expression
+                    }]).stack;
+
+                    delete token.match;
+                    return token;
+                },
+
+                // Runs when the template is rendered
+                parse: function (token, context, chain) {
+                    // parse the tokens into a value with the render context
+                    var name = Twig.expression.parse.apply(this, [token.stack, context]),
+                        output = '';
+
+                    flags[name] = true;
+
+                    return {
+                        chain: false,
+                        output: output
+                    };
+                }
+            };
+        }
+    }
+});
+
 ```
 
-This will also give you global access to the `fractal` command which you can use to scaffold a new Fractal project with `fractal new`.
 
-The downside is that it's then difficult to use different Fractal versions on different projects.
+## Using external plugins
 
-This option is not recommended until a global Fractal install is capable of offloading to a project specific version.
+An example to use [twig-js-markdown](https://github.com/ianbytchek/twig-js-markdown):
+```js
+const twigMarkdown = require('twig-markdown');
+const instance = fractal.components.engine(twigAdapter);
 
-## Examples
+// instance.twig refers to the twig.js instance
+instance.twig.extend(twigMarkdown);
 
-While there are no official examples or demo instances, there are lots of public examples on the [Awesome Fractal](https://github.com/frctl/awesome-fractal) repo.
+```
 
-## Contributing
+## Included filters
 
-Fractal has an active group of contributors but we are always looking for more help. If you are interested in contributing then please come and say hi on [Fractal's Discord server](https://discord.gg/vuRz4Yx).
+### path
+Takes a root-relative path and re-writes it if required to make it work in static HTML exports.
 
-Please note we have a [code of conduct](.github/CODE_OF_CONDUCT.md), please follow it in all your interactions with the project.
+It is strongly recommended to use this filter whenever you need to link to any static assets from your templates.
 
-### Reporting issues & requesting features
+The path argument should begin with a slash and be relative to the web root. During a static HTML export this path will then be re-written to be relative to the current page.
 
-We use GitHub issues to track bugs and feature requests. Thank your for taking the time to submit your issue in one of [our repositories](https://github.com/frctl).
+Usage:
+```twig
+{{ '/css/my-stylesheet.css'|path }}
+```
 
-If you rather have a question, please ask it on [our Discord server](https://discord.gg/vuRz4Yx).
+## Included tags
 
-### Submitting pull requests
+### render
+The render tag renders a component (referenced by its handle) using the context data provided to it. If no data is provided, it will use the context data defined within the component's configuration file, if it has one.
 
-We will always welcome pull requests on any of the [frctl organisation](https://github.com/frctl) repositories. Please submit PRs against `main` branch with an explanation of your intention.
-
-We use [conventional commits](https://www.conventionalcommits.org/), which means that every pull request title should conform to the standard.
-
-### Development
-
-This repository is a monorepo managed by Lerna. There is only one lockfile in root. This means that all packages must be installed in root, manually added to the packages' package.json files and then bootstrapped with lerna.
-
-To do some work, run the following commands in root:
-1. `npm ci`
-2. `npm run bootstrap`
-
-## Testing
-
-Fractal is a project that evolved rapidly and organically from a proof-of-concept prototype into a more stable, mature tool. Because of this it's currently pretty far behind where it should be in terms of test coverage. Any contributions on this front would be most welcome!
-
-Existing tests can be run using the `npm test` command.
-
-## Contributors ✨
-
-Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
-
-<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
-<!-- prettier-ignore-start -->
-<!-- markdownlint-disable -->
-<table>
-  <tr>
-    <td align="center"><a href="http://allmarkedup.com"><img src="https://avatars1.githubusercontent.com/u/126726?v=4" width="100px;" alt=""/><br /><sub><b>Mark Perkins</b></sub></a><br /><a href="#question-allmarkedup" title="Answering Questions">💬</a> <a href="https://github.com/frctl/fractal/issues?q=author%3Aallmarkedup" title="Bug reports">🐛</a> <a href="https://github.com/frctl/fractal/commits?author=allmarkedup" title="Code">💻</a> <a href="#content-allmarkedup" title="Content">🖋</a> <a href="#design-allmarkedup" title="Design">🎨</a> <a href="https://github.com/frctl/fractal/commits?author=allmarkedup" title="Documentation">📖</a> <a href="#infra-allmarkedup" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="https://github.com/frctl/fractal/pulls?q=is%3Apr+reviewed-by%3Aallmarkedup" title="Reviewed Pull Requests">👀</a></td>
-    <td align="center"><a href="https://github.com/dkhuntrods"><img src="https://avatars0.githubusercontent.com/u/852397?v=4" width="100px;" alt=""/><br /><sub><b>dkhuntrods</b></sub></a><br /><a href="https://github.com/frctl/fractal/commits?author=dkhuntrods" title="Code">💻</a> <a href="#content-dkhuntrods" title="Content">🖋</a> <a href="https://github.com/frctl/fractal/commits?author=dkhuntrods" title="Documentation">📖</a> <a href="#eventOrganizing-dkhuntrods" title="Event Organizing">📋</a> <a href="#ideas-dkhuntrods" title="Ideas, Planning, & Feedback">🤔</a> <a href="#projectManagement-dkhuntrods" title="Project Management">📆</a></td>
-    <td align="center"><a href="https://github.com/Chapabu"><img src="https://avatars0.githubusercontent.com/u/1395471?v=4" width="100px;" alt=""/><br /><sub><b>Matt Chapman</b></sub></a><br /><a href="#question-Chapabu" title="Answering Questions">💬</a> <a href="https://github.com/frctl/fractal/issues?q=author%3AChapabu" title="Bug reports">🐛</a> <a href="https://github.com/frctl/fractal/commits?author=Chapabu" title="Code">💻</a> <a href="#ideas-Chapabu" title="Ideas, Planning, & Feedback">🤔</a> <a href="#infra-Chapabu" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="#maintenance-Chapabu" title="Maintenance">🚧</a> <a href="https://github.com/frctl/fractal/pulls?q=is%3Apr+reviewed-by%3AChapabu" title="Reviewed Pull Requests">👀</a></td>
-    <td align="center"><a href="http://eida.st"><img src="https://avatars1.githubusercontent.com/u/1892091?v=4" width="100px;" alt=""/><br /><sub><b>Mihkel Eidast</b></sub></a><br /><a href="#question-risker" title="Answering Questions">💬</a> <a href="https://github.com/frctl/fractal/issues?q=author%3Arisker" title="Bug reports">🐛</a> <a href="https://github.com/frctl/fractal/commits?author=risker" title="Code">💻</a> <a href="#maintenance-risker" title="Maintenance">🚧</a> <a href="https://github.com/frctl/fractal/pulls?q=is%3Apr+reviewed-by%3Arisker" title="Reviewed Pull Requests">👀</a></td>
-    <td align="center"><a href="http://www.benoitburgener.ch"><img src="https://avatars1.githubusercontent.com/u/793344?v=4" width="100px;" alt=""/><br /><sub><b>Benoît Burgener</b></sub></a><br /><a href="#question-LeBenLeBen" title="Answering Questions">💬</a> <a href="https://github.com/frctl/fractal/issues?q=author%3ALeBenLeBen" title="Bug reports">🐛</a> <a href="https://github.com/frctl/fractal/commits?author=LeBenLeBen" title="Code">💻</a> <a href="https://github.com/frctl/fractal/commits?author=LeBenLeBen" title="Documentation">📖</a> <a href="#ideas-LeBenLeBen" title="Ideas, Planning, & Feedback">🤔</a> <a href="#maintenance-LeBenLeBen" title="Maintenance">🚧</a> <a href="https://github.com/frctl/fractal/pulls?q=is%3Apr+reviewed-by%3ALeBenLeBen" title="Reviewed Pull Requests">👀</a></td>
-    <td align="center"><a href="https://github.com/levito"><img src="https://avatars0.githubusercontent.com/u/70500?v=4" width="100px;" alt=""/><br /><sub><b>Veit Lehmann</b></sub></a><br /><a href="https://github.com/frctl/fractal/commits?author=levito" title="Code">💻</a></td>
-  </tr>
-  <tr>
-    <td align="center"><a href="https://github.com/Schleuse"><img src="https://avatars1.githubusercontent.com/u/2717384?v=4" width="100px;" alt=""/><br /><sub><b>René Schleusner</b></sub></a><br /><a href="https://github.com/frctl/fractal/commits?author=Schleuse" title="Code">💻</a></td>
-  </tr>
-</table>
-
-<!-- markdownlint-enable -->
-<!-- prettier-ignore-end -->
-
-<!-- ALL-CONTRIBUTORS-LIST:END -->
-
-This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
-
-## License
-
-[MIT](https://github.com/frctl/fractal/blob/main/LICENSE)
-
-[docs]: https://fractal.build
+Usage:
+```twig
+{% render "@component" with {some: 'values'} %}
+```
